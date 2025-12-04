@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.model.rf import (
+from src.models.rf import (
     DecisionTreeClassifierNumpy,
     RandomForestClassifierNumpy,
 )

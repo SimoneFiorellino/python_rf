@@ -248,10 +248,11 @@ class RandomForestClassifierNumpy:
         self.max_features = max_features
         self.bootstrap = bootstrap
         self.random_state = random_state
-
         self.trees: List[DecisionTreeClassifierNumpy] = []
+        # Public attributes
         self.n_classes_: Optional[int] = None
-        self._rng = random.Random(random_state)
+        # Internal random generator
+        self._rng = np.random.default_rng(random_state)
 
     def fit(self, X: np.ndarray, y: np.ndarray):
         X = np.asarray(X, dtype=float)
@@ -264,7 +265,7 @@ class RandomForestClassifierNumpy:
         for i in range(self.n_estimators):
             # bootstrap sampling
             if self.bootstrap:
-                indices = [self._rng.randrange(0, n_samples) for _ in range(n_samples)]
+                indices = self._rng.integers(0, n_samples, size=n_samples)
                 sample_X = X[indices]
                 sample_y = y[indices]
             else:
@@ -285,16 +286,11 @@ class RandomForestClassifierNumpy:
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         X = np.asarray(X, dtype=float)
-        # Sum probabilities from each tree and then average
-        proba_sum = None
-        for tree in self.trees:
-            proba = tree.predict_proba(X)  # (n_samples, n_classes)
-            if proba_sum is None:
-                proba_sum = proba
-            else:
-                proba_sum += proba
-        proba_avg = proba_sum / len(self.trees)
-        return proba_avg
+
+        # (n_trees, n_samples, n_classes)
+        all_proba = np.stack([tree.predict_proba(X) for tree in self.trees], axis=0)
+        # Average across trees -> (n_samples, n_classes)
+        return all_proba.mean(axis=0)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         proba = self.predict_proba(X)
@@ -308,7 +304,7 @@ if (
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.model_selection import train_test_split
 
-    from src.utils.custom_decorators import timer
+    from src.utils.custom_context_menager import Timer
 
     # ------------------------
     # 1. Load a harder real dataset
@@ -336,7 +332,8 @@ if (
         bootstrap=True,
         random_state=42,
     )
-    timer(model_np.fit, "NumPy RF fit")(X_train_np, y_train_np)
+    with Timer():
+        model_np.fit(X_train_np, y_train_np)
 
     preds_np_test = model_np.predict(X_test_np)
     acc_np_test = (preds_np_test == y_test_np).mean()
@@ -352,7 +349,8 @@ if (
         bootstrap=True,
         random_state=42,
     )
-    timer(model_skl.fit, "skl RF fit")(X_train_np, y_train_np)
+    with Timer():
+        model_skl.fit(X_train_np, y_train_np)
 
     preds_skl_test = model_skl.predict(X_test_np)
     acc_skl_test = (preds_skl_test == y_test_np).mean()
