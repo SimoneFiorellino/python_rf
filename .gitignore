@@ -12,3 +12,4 @@ wheels/
 # folders
 reports/
 data/
+!src/data/
