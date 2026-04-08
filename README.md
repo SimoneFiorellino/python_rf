@@ -8,7 +8,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### Clone the repo
 ```
 git clone https://github.com/SimoneFiorellino/python_rf.git
-cd <YOUR_REPO_FOLDER>
+cd python_rf
 ```
 
 ### Sync environment and dependencies
